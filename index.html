@@ -282,8 +282,9 @@ function showSelectionAdd(){
  if(!sel||sel.isCollapsed){hideSelectionAdd();return}
  const text=sel.toString().trim();
  const node=sel.anchorNode;
- const question=$('question');
- if(!text||!node||!question.contains(node.nodeType===1?node:node.parentElement)){hideSelectionAdd();return}
+ const selectedNode=node&&(node.nodeType===1?node:node.parentElement);
+ const allowed=['question','choices','feedback'].some(id=>$(id).contains(selectedNode));
+ if(!text||!selectedNode||!allowed){hideSelectionAdd();return}
  selectedWordText=text;
  const range=sel.getRangeAt(0),rect=range.getBoundingClientRect();
  if(!rect.width&&!rect.height){hideSelectionAdd();return}
@@ -324,7 +325,6 @@ selectionAddButton.addEventListener('click',async()=>{
  vocab.push(entry);customVocab.push(entry);
  localStorage.setItem('toeic_custom_vocab',JSON.stringify(customVocab));
  hideSelectionAdd();
- alert('「'+word+'」＝「'+meaning.trim()+'」を単語テストに追加しました！');
 });
 
 let favorites={grammar:new Set(JSON.parse(localStorage.getItem('toeic_fav_grammar')||'[]')),vocab:new Set(JSON.parse(localStorage.getItem('toeic_fav_vocab')||'[]'))};
