@@ -361,7 +361,7 @@ let archived={grammar:new Set(JSON.parse(localStorage.getItem('toeic_archived_gr
 let seen={grammar:new Set(JSON.parse(localStorage.getItem('toeic_seen_grammar')||'[]')),vocab:new Set(JSON.parse(localStorage.getItem('toeic_seen_vocab')||'[]')),howl:new Set(JSON.parse(localStorage.getItem('toeic_seen_howl')||'[]'))};
 let totalStudyMs=Number(localStorage.getItem('toeic_total_study_ms')||0),studyStartedAt=0,studyInterval=null;
 const studyDateKey=()=>{let d=new Date();return 'toeic_study_day_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-let activeStudyDate=studyDateKey(),todayStudyMs=Number(localStorage.getItem(activeStudyDate)||0),answeredCount=Number(localStorage.getItem('toeic_answered_count')||0);
+let activeStudyDate=studyDateKey(),todayStudyMs=Number(localStorage.getItem(activeStudyDate)||0),answeredCount=Number(localStorage.getItem('toeic_answered_count')||0),averageStudyMs=Number(localStorage.getItem('toeic_average_study_ms')||0);
 function favId(i){return section==='grammar'?raw[i][0]:i}
 function persistSet(key,set){localStorage.setItem(key,JSON.stringify([...set]))}
 function refreshStar(){let el=$('star');if(idx>=order.length){el.classList.add('hidden');return}el.classList.remove('hidden');let on=favorites[section].has(favId(order[idx]));el.textContent=on?'⭐':'☆';el.classList.toggle('on',on);el.setAttribute('aria-label',on?'お気に入りを解除':'お気に入りに登録')}
@@ -391,8 +391,8 @@ let howlMissed=new Set(JSON.parse(localStorage.getItem('toeic_howl_missed')||'[]
 let vocabMissed=new Set(JSON.parse(localStorage.getItem('toeic_vocab_missed')||'[]'));
 function formatStudyMinutes(ms){let mins=Math.floor(ms/60000),hours=Math.floor(mins/60),remain=mins%60;return hours?hours+'時間'+remain+'分':mins+'分'}
 function syncStudyDate(){let key=studyDateKey();if(key!==activeStudyDate){activeStudyDate=key;todayStudyMs=Number(localStorage.getItem(key)||0)}}
-function stopStudyTimer(){if(studyStartedAt){let elapsed=Date.now()-studyStartedAt;syncStudyDate();todayStudyMs+=elapsed;totalStudyMs+=elapsed;studyStartedAt=0;localStorage.setItem(activeStudyDate,String(todayStudyMs));localStorage.setItem('toeic_total_study_ms',String(totalStudyMs))}if(studyInterval){clearInterval(studyInterval);studyInterval=null}updateStudyTimer()}
-function updateStudyTimer(){syncStudyDate();let active=studyStartedAt?Date.now()-studyStartedAt:0;let today=todayStudyMs+active,total=totalStudyMs+active;let average=answeredCount?formatStudyMinutes(total/answeredCount):'--';$('timer').textContent='⏱ 1問あたり：'+average+'　｜　今日累積：'+formatStudyMinutes(today)+'　｜　合計累積：'+formatStudyMinutes(total)}
+function stopStudyTimer(){if(studyStartedAt){let elapsed=Date.now()-studyStartedAt;syncStudyDate();todayStudyMs+=elapsed;totalStudyMs+=elapsed;averageStudyMs+=elapsed;studyStartedAt=0;localStorage.setItem(activeStudyDate,String(todayStudyMs));localStorage.setItem('toeic_total_study_ms',String(totalStudyMs));localStorage.setItem('toeic_average_study_ms',String(averageStudyMs))}if(studyInterval){clearInterval(studyInterval);studyInterval=null}updateStudyTimer()}
+function updateStudyTimer(){syncStudyDate();let active=studyStartedAt?Date.now()-studyStartedAt:0;let today=todayStudyMs+active,total=totalStudyMs+active,average=answeredCount?formatStudyMinutes((averageStudyMs+active)/answeredCount):'--';$('timer').textContent='⏱ 1問あたり（平均）：'+average+'　｜　今日累積：'+formatStudyMinutes(today)+'　｜　合計累積：'+formatStudyMinutes(total)}
 function startStudyTimer(){if(!studyStartedAt&&!document.hidden){studyStartedAt=Date.now();studyInterval=setInterval(updateStudyTimer,1000)}updateStudyTimer()}
 function recordAnsweredQuestion(){answeredCount++;localStorage.setItem('toeic_answered_count',String(answeredCount));updateStudyTimer()}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopStudyTimer();else if(order.length&&idx<order.length)startStudyTimer()});
