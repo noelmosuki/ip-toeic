@@ -273,18 +273,19 @@ const $=x=>document.getElementById(x);
 let favorites={grammar:new Set(JSON.parse(localStorage.getItem('toeic_fav_grammar')||'[]')),vocab:new Set(JSON.parse(localStorage.getItem('toeic_fav_vocab')||'[]'))};
 let archived={grammar:new Set(JSON.parse(localStorage.getItem('toeic_archived_grammar')||'[]')),vocab:new Set(JSON.parse(localStorage.getItem('toeic_archived_vocab')||'[]'))};
 let seen={grammar:new Set(JSON.parse(localStorage.getItem('toeic_seen_grammar')||'[]')),vocab:new Set(JSON.parse(localStorage.getItem('toeic_seen_vocab')||'[]'))};
-let totalStudyMs=Number(localStorage.getItem('toeic_total_study_ms')||0),studyStartedAt=0,studyInterval=null;
+let totalStudyMs=Number(localStorage.getItem('toeic_total_study_ms')||0),sessionStudyMs=0,studyStartedAt=0,studyInterval=null;
 function favId(i){return section==='grammar'?raw[i][0]:i}
 function persistSet(key,set){localStorage.setItem(key,JSON.stringify([...set]))}
 function refreshStar(){let el=$('star');if(idx>=order.length){el.classList.add('hidden');return}el.classList.remove('hidden');let on=favorites[section].has(favId(order[idx]));el.textContent=on?'⭐':'☆';el.classList.toggle('on',on);el.setAttribute('aria-label',on?'お気に入りを解除':'お気に入りに登録')}
 let mode='all',order=[],idx=0,score=0,answered=false,section='grammar',vocabOptions=[];
 let missed=new Set(JSON.parse(localStorage.getItem('toeic_missed')||'[]'));
 let vocabMissed=new Set(JSON.parse(localStorage.getItem('toeic_vocab_missed')||'[]'));
-function stopStudyTimer(){if(studyStartedAt){totalStudyMs+=Date.now()-studyStartedAt;studyStartedAt=0;localStorage.setItem('toeic_total_study_ms',String(totalStudyMs))}if(studyInterval){clearInterval(studyInterval);studyInterval=null}updateStudyTimer()}
-function updateStudyTimer(){let ms=totalStudyMs+(studyStartedAt?Date.now()-studyStartedAt:0),mins=Math.floor(ms/60000),hours=Math.floor(mins/60),remain=mins%60;$('timer').textContent='⏱ トータル学習時間：'+(hours?hours+'時間'+remain+'分':mins+'分')}
+function formatStudyMinutes(ms){let mins=Math.floor(ms/60000),hours=Math.floor(mins/60),remain=mins%60;return hours?hours+'時間'+remain+'分':mins+'分'}
+function stopStudyTimer(){if(studyStartedAt){let elapsed=Date.now()-studyStartedAt;sessionStudyMs+=elapsed;totalStudyMs+=elapsed;studyStartedAt=0;localStorage.setItem('toeic_total_study_ms',String(totalStudyMs))}if(studyInterval){clearInterval(studyInterval);studyInterval=null}updateStudyTimer()}
+function updateStudyTimer(){let active=studyStartedAt?Date.now()-studyStartedAt:0;$('timer').textContent='⏱ 今回：'+formatStudyMinutes(sessionStudyMs+active)+'　｜　累積：'+formatStudyMinutes(totalStudyMs+active)}
 function startStudyTimer(){if(!studyStartedAt&&!document.hidden){studyStartedAt=Date.now();studyInterval=setInterval(updateStudyTimer,1000)}updateStudyTimer()}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopStudyTimer();else if(order.length&&idx<order.length)startStudyTimer()});
-window.addEventListener('pagehide',()=>{if(studyStartedAt){totalStudyMs+=Date.now()-studyStartedAt;studyStartedAt=0;localStorage.setItem('toeic_total_study_ms',String(totalStudyMs))}});
+window.addEventListener('pagehide',()=>stopStudyTimer());
 updateStudyTimer();
 function playPiko(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=new C();[0,1].forEach(n=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=n?1320:990;g.gain.setValueAtTime(.0001,ctx.currentTime+n*.085);g.gain.exponentialRampToValueAtTime(.16,ctx.currentTime+n*.085+.012);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+n*.085+.13);o.connect(g);g.connect(ctx.destination);o.start(ctx.currentTime+n*.085);o.stop(ctx.currentTime+n*.085+.14)});setTimeout(()=>ctx.close(),400)}catch(e){}}
 function updateGoal(){let total=(section==='grammar'?raw:vocab).length,arch=archived[section].size,left=total-arch;$('goal').textContent='🎯 未アーカイブ '+left+' / '+total+' 問　｜　アーカイブ '+arch+' 問'+(left===0?'　全問制覇！':'');$('goalBar').style.width=(total?arch/total*100:0)+'%';$('archiveList').textContent='📦 アーカイブ ('+arch+')';$('all').textContent='全問題 ('+left+')';$('retry').textContent='間違えた問題 ('+(section==='grammar'?missed.size:vocabMissed.size)+')';$('favorites').textContent='⭐ お気に入り ('+favorites[section].size+')'}
