@@ -838,17 +838,23 @@ function refreshStar(){let el=$('star');if(idx>=order.length){el.classList.add('
 let mode='all',order=[],idx=0,score=0,answered=false,section='grammar',vocabOptions=[];
 $('timerSettingsToggle').onclick=()=>{$('timerSettings').classList.toggle('hidden');syncTimerSettings()};$('pauseQuestionTimer').onclick=toggleQuestionTimerPause;
 $('saveTimerSettings').onclick=()=>{timerEnabled=$('timerEnabled').checked;soundEnabled=$('soundEnabled').checked;localStorage.setItem('toeic_sound_enabled',String(soundEnabled));let n=Number($('timerSeconds').value);if(!Number.isFinite(n))n=20;timerSeconds=Math.round(Math.min(60,Math.max(5,n)));$('timerSeconds').value=timerSeconds;localStorage.setItem('toeic_timer_enabled',String(timerEnabled));localStorage.setItem('toeic_timer_seconds',String(timerSeconds));$('timerSettingsMessage').textContent='保存しました。'+(timerEnabled?timerSeconds+'秒で計測します。':'タイムアタックはOFFです。');if(!answered&&idx<order.length)startQuestionTimer();updateStudyTimer()};syncTimerSettings();
+// 問題を途中に追加・並べ替えしたとき、古い番号ベースの出題順を使い回さない
+const QUESTION_BANK_VERSION='2026-11-10-1';
 function progressKeyFor(sec){return 'toeic_quiz_progress_v1_'+sec}
 function saveQuizProgress(){
  const key=progressKeyFor(section);
  localStorage.setItem('toeic_last_section',section);
  if(!order.length||idx>=order.length){localStorage.removeItem(key);return}
- localStorage.setItem(key,JSON.stringify({section,mode,order,idx,score}));
+ localStorage.setItem(key,JSON.stringify({section,mode,order,idx,score,bankVersion:QUESTION_BANK_VERSION}));
 }
 function restoreQuizProgress(targetSection){
  try{
   const sec=targetSection||localStorage.getItem('toeic_last_section')||'grammar';
-  const p=JSON.parse(localStorage.getItem(progressKeyFor(sec))||'null');
+  const progressKey=progressKeyFor(sec);
+  const p=JSON.parse(localStorage.getItem(progressKey)||'null');
+  // 旧データは配列の位置で問題を保存していたため、問題追加後は番号がずれる。
+  // バージョンが違う場合は古い進捗だけ破棄し、最新の全問題から出題し直す。
+  if(p&&p.bankVersion!==QUESTION_BANK_VERSION){localStorage.removeItem(progressKey);return false}
   if(!p||!['grammar','vocab','howl'].includes(p.section)||!Array.isArray(p.order)||!p.order.length||!Number.isInteger(p.idx)||p.idx<0||p.idx>=p.order.length)return false;
   const source=p.section==='grammar'?raw:(p.section==='howl'?howlPhrases:vocab);
   if(p.order.some(n=>!Number.isInteger(n)||n<0||n>=source.length))return false;
