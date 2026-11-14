@@ -918,7 +918,7 @@ function restoreQuizProgress(targetSection){
 let missed=new Set(JSON.parse(localStorage.getItem('toeic_missed')||'[]'));
 let howlMissed=new Set(JSON.parse(localStorage.getItem('toeic_howl_missed')||'[]'));
 let vocabMissed=new Set(JSON.parse(localStorage.getItem('toeic_vocab_missed')||'[]'));
-let vocabCorrectStreak=Math.max(0,Number(localStorage.getItem('toeic_vocab_correct_streak')||0)||0);let vocabBestStreak=Math.max(vocabCorrectStreak,Number(localStorage.getItem('toeic_vocab_best_streak')||0)||0);
+let vocabCorrectStreak=Math.max(0,Number(localStorage.getItem('toeic_vocab_correct_streak')||0)||0);let vocabBestStreak=Math.max(0,Number(localStorage.getItem('toeic_vocab_best_streak')||0)||0);
 function formatStudyMinutes(ms){let mins=Math.floor(ms/60000),hours=Math.floor(mins/60),remain=mins%60;return hours?hours+'時間'+remain+'分':mins+'分'}function formatStudyAverageSeconds(ms){return Math.round(ms/1000)+'秒'}
 function syncStudyDate(){let key=studyDateKey();if(key!==activeStudyDate){activeStudyDate=key;todayStudyMs=Number(localStorage.getItem(key)||0)}}
 function stopStudyTimer(){if(studyStartedAt){let elapsed=Date.now()-studyStartedAt;syncStudyDate();todayStudyMs+=elapsed;totalStudyMs+=elapsed;averageStudyMs+=elapsed;studyStartedAt=0;localStorage.setItem(activeStudyDate,String(todayStudyMs));localStorage.setItem('toeic_total_study_ms',String(totalStudyMs));localStorage.setItem('toeic_average_study_ms',String(averageStudyMs))}if(studyInterval){clearInterval(studyInterval);studyInterval=null}updateStudyTimer()}
